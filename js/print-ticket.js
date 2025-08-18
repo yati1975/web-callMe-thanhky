@@ -1,4 +1,4 @@
-function printTicket(storename,callername,nowGetNumItem,initData,spacing,paper) {
+function printTicket(storename,callername,nowGetNumItemTitle,nowUserGetNumValue,spacing,paper) {
 
   let title = storename;
 
@@ -16,10 +16,12 @@ function printTicket(storename,callername,nowGetNumItem,initData,spacing,paper) 
 
 
   // 目前取號項目名稱
-  let nowGetNumItemTitle = "";
-  if ((nowGetNumItem !== null) && ((initData.get_num_item_names !== null) && (initData.get_num_item_names !== ""))) {
-    nowGetNumItemTitle = initData.get_num_item_names[nowGetNumItem];
-  }
+  //let nowGetNumItemTitle = "";
+  // if ((nowGetNumItem !== null) && ((initData.get_num_item_names !== null) && (initData.get_num_item_names !== ""))) {
+  //  console.log(nowGetNumItem);
+  //  nowGetNumItemTitle = initData.get_num_item_names[nowGetNumItem];
+  //}
+  //console.log(nowGetNumItemTitle);
 
   // 定義58mm或80mm紙張，各種文字的尺寸
   const sizes58 = {
@@ -88,8 +90,10 @@ function printTicket(storename,callername,nowGetNumItem,initData,spacing,paper) 
     align: "center",
     size: sizes.space
   }];
+  //console.log(JSON.stringify(content));
 
-  fetch("https://127.0.0.1/print", {
+  
+  fetch("https://127.0.0.1/print", {    
       method: "POST",
       headers: {
         "Content-Type": "application/json"

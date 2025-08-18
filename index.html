@@ -1,0 +1,1724 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="version" content="1.0.7">
+<script src="./js/qrcode.min.js"></script>
+<script src="./js/crypto-js.min.js"></script>
+<script src="./js/localforage.min.js"></script>
+<script src="./WebSocket_lower.js"></script>  
+<!-- print-ticket 增加 -->
+ <script src="./js/print-config.js"></script>
+<script src="./js/print-ticket.js"></script>
+
+
+<title>誠記抽票機</title>
+<link rel="icon" type="image/png" sizes="32x32" href="./images/web32x32.png"> 
+<style>
+  :root{
+    --orange: #f58600; /* 可調整橘色 */
+    --circle-size: 84px; /* 圓直徑，可改 */
+    --overlap: -22px; /* 重疊量（負值） */
+  }
+
+  body{
+    font-family: "Noto Sans TC", "Helvetica Neue", Arial;
+    background: #fff;
+    padding: 48px;
+  }
+  .dropdown {
+      display: flex;
+      flex-direction: column;
+  }
+  .dropdown-button-area{
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: nowrap;
+      justify-content: center;
+      /* align-content: center; */
+      right: 1vw;
+      position: absolute;
+      top: 1vh;
+  }
+  button.dropdown-button {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      flex-direction: row;
+      /* align-content: center; */
+      justify-content: center;
+      /* align-items: center; */
+      z-index: 1000;        
+  }
+  button.dropdown-button img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.3s ease;            
+  }
+  button.dropdown-button p{
+      color: white;
+      font-size: 1em;
+      padding-left: 2px;
+      text-align: center; /* 置中標題 */
+  }        
+  button.dropdown-button:hover img {
+      opacity: 0.7; /* hover 效果，變透明一點 */
+  }
+  .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #043190;/*#14c4b7;*/
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+      min-width: 130px;
+      z-index: 999;
+      top: 60px;
+      right: 0;
+      color: white;
+  }
+  .dropdown-content p{
+      display: block;
+      text-align: center;
+  }
+  .dropdown-content-form{
+      padding: 5px 5px;
+      cursor: pointer;
+      text-align: center;
+  }
+  .show {
+      display: block;
+  }
+
+
+  .language-option {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin: 6px 0;
+  }
+
+  .language-option input[type="radio"] {
+      display: none; /* 隱藏原始 radio */
+  }
+  .custom-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid #ccc;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-size: 16px;
+      color: #F68200;
+      visibility: hidden; /* 預設隱藏，只有選中的才顯示 */
+  }
+
+  .language-option input[type="radio"]:checked + .custom-radio {
+      visibility: visible;
+  }
+
+  .language-option input[type="radio"]:checked + .custom-radio::before {
+      content: '✔'; /* 打勾勾符號 */
+  }
+  .badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: var(--circle-size);
+    /* 用 padding 讓文字左右保留空間 */
+    padding: 0 18px;
+    /* 若希望整體置中，可用 margin: 0 auto; */
+  }
+
+  .circles {
+    display: flex;
+    align-items: center;
+    /* 讓圓圈在文字後方 */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%); /* 垂直 & 水平置中 */
+    pointer-events: none; /* 不會攔截點擊 */
+    align-items: center;
+
+  }
+
+  .circle {
+    width: var(--circle-size);
+    height: var(--circle-size);
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--orange) 0%, #ef7f00 100%);
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.02) inset;
+    flex: 0 0 auto;
+    margin-left: var(--overlap);
+  }
+
+  /* 第一個圓不要有負 margin（視覺上從左邊開始） */
+  .circle:first-child{
+    margin-left: 0;
+  }
+
+  /* 文字在最上層 */
+  .badge .text {
+    position: relative;
+    z-index: 2;
+    color: white;
+    font-size: 28px;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    padding: 0 8px;
+  }
+
+
+.arrow-label {
+  display: inline-block;
+  background-color: #003399; /* 藍色背景 */
+  color: white;
+  font-size: 20px;
+  font-family: "Microsoft JhengHei", sans-serif;
+  padding: 6px 20px;
+  line-height: 1.4;
+  /* position: absolute;
+  bottom: 0; */
+  width: 90%;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px; /* 左側圓角 */
+  clip-path: polygon(
+    0 0,                  /* 左上角 */
+    calc(100% - 20px) 0,  /* 右上角箭頭起點 */
+    100% 50%,             /* 箭頭尖端 */
+    calc(100% - 20px) 100%, /* 右下角箭頭起點 */
+    0 100%                /* 左下角 */
+  );
+}
+.arrow-label.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.currentDisp{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;    
+}
+.currentDisp p{
+  color: #043190;
+  font-size: 1rem;
+  margin: 0;
+}
+#currentCall {
+  background-color: black;
+  color: red;
+  padding: 0px 12px;
+  border-radius: 6px;
+  /*font-family: 'Courier New', Courier, monospace;*/
+  font-weight: bold;
+  font-size: 1.5rem; /* 可依需求調整大小 */
+  text-align: center;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  margin: 0 8px 0 8px;
+  width: 80%;
+} 
+.page1{
+    display: flex;
+    width: 80%;
+    min-width: 300px;
+    max-width: 600px;
+    height: 60vh;
+    /* box-sizing: border-box; */
+    padding: 24px;
+    /* display: grid; */
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+    overflow: hidden;
+}
+.qrcode-container {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    background-color: #043190;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;    
+    margin: 10px auto;
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 1vh auto; */
+} 
+
+.qrcode-title {
+  color: white;
+  font-size: 2rem;
+  margin: auto;
+}
+.qrcode-title2 {
+  color: white;
+  font-size: 1.2rem;
+  margin: auto;
+}
+.qrcode-bg{
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: 20px;
+  border: 10px solid white;
+  margin: 8px auto;
+}
+#about-qrcode {
+  display: flex;
+  /*width: 100%;*/
+  /*height: auto;*/
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 5px;
+  border: 1px solid white;
+  box-sizing: border-box; 
+}
+
+button.confirm-button {
+  background-color: #FD5126;
+  border: none;
+  border-radius: 10px;
+  transition: background-color 0.3s ease, transform 0.2s;
+  cursor: pointer;
+  height: auto;
+  margin-left: auto;
+  color: white;
+  font-size: 20px;
+  padding: 6px 20px;
+  line-height: 1.4;
+  width:100%;
+}
+
+button.confirm-button:hover {
+    background-color: #FD5126;
+    transform: scale(1.05);
+}
+
+button.confirm-button:active {
+    transform: scale(0.98);
+}
+button.confirm-button.disabled {
+    background-color: transparent;
+    border: 2px solid #a1a1a1;
+    color: #a1a1a1;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+/* button.home-button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    flex-direction: row;
+
+    justify-content: center;
+    z-index: 1;        
+}
+button.home-button img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease;            
+}
+button.home-button:hover img {
+    opacity: 0.7; 
+} */
+
+
+.page2{
+    display: flex;
+    width: 80%;
+    min-width: 300px;
+    height: 60vh;
+    padding: 24px;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+    overflow: hidden;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+.group-container {
+  /* display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px; */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 固定二欄 */
+  gap: clamp(2vh, 15px, 2vw);
+  margin-top: 20px;  
+}
+
+.group-card {
+  background-color: #043190; /* 深藍背景 */
+  color: white;
+  border-radius: 15px;
+  /* padding: 15px 20px; */
+  padding: 15px 10px;
+  min-width: 150px;
+  width: 18vw;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.group-title {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    height: 65%;
+    border-bottom: 1px solid #c8c8c8;
+}
+
+.group-info {
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;  
+}
+
+.icon {
+  margin-right: 4px;
+}
+.icon img{
+  width: auto;
+  height: 30px;
+}
+
+.count {
+  color: orange;
+  font-weight: bold;
+}
+
+/* 選取狀態的樣式 */
+.group-card.selected {
+  background-color: #F68200;
+}
+
+.group-card.selected .group-info {
+  color: #FFE9A1;
+}
+
+.group-card.selected .count {
+  color: #E4FF98;
+}
+
+.group-card.selected .icon img {
+  content: url("./images/waiting_light.png");
+}
+
+.refresh {
+  margin-top: 15px;
+  font-size: 1rem;
+  color: #043190;
+}
+
+/* 背景遮罩 */
+.overlay2 {
+    display: none; /* 初始隱藏 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); 
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 浮動視窗樣式 */
+.modal {
+    position: relative;
+    background-color: #ffffff;
+    padding: 20px;
+    width: 100%;
+    max-width: 300px;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    /* color: white; */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: auto;
+    min-height: 280px;
+}
+.modal-button {
+    /* background-color: #006d65; */
+    border: none;
+    /* padding: 20px 10px;  */
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 300px;        
+    /* height: auto; */
+    color: #00534D;
+}    
+
+.modal-box {
+    display: grid;
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    box-sizing: border-box;
+    /* color: white; */
+    color: #043190;
+    height: auto;
+    /* min-height: 140px; */
+    align-content: space-around;
+}
+.modal-box:last-child {
+    border-bottom: none;
+}
+.pStore{
+    font-size: 2rem;
+    color: #043190;
+}
+.pSection{
+    font-size: 2rem;
+    color: #F68200;
+}
+.pNumber{
+    font-size: 5rem;
+    color: #F68200;
+}
+.pTime{
+    font-size: 1rem;
+    color: #043190;
+}
+.modal-box-info {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;  
+}
+
+.modal-box-icon {
+  margin-right: 4px;
+}
+.modal-box-icon img{
+  width: auto;
+  height: 30px;
+}
+
+.modal-box-count {
+  color: orange;
+  font-weight: bold;
+  margin: 5px;
+}
+.hidden{
+  display: none;
+}
+.footer {
+    margin-left: -56px;
+    /* max-width: 600px; */
+    display: flex;
+    position: relative;
+    bottom: env(safe-area-inset-bottom, 10px);
+    flex-direction: column;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100vw;
+}
+#ver{
+    font-size: 0.8rem;
+}
+.resp { display:flex; gap:12px; padding:12px;  }
+/* .resp > * { padding:10px; background:#fff; border:1px solid #ddd; } */
+.resp > * { padding:10px; background:#fff;}
+.resp .left, .resp .right { flex: 0 0 140px; }
+.resp .center { 
+  flex:1; 
+  min-width:0; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+}
+.resp .right {
+    display: flex;
+    align-items: flex-end;
+    /* flex-direction: column-reverse; */
+    justify-content: space-between;
+}
+
+
+/* 響應式縮小字體 */
+@media (max-width: 480px){
+  :root{ --circle-size: 64px; --overlap: -18px; }
+  .badge .text{ font-size: 18px; letter-spacing: 1px; }
+}
+/* 小螢幕改成直列 */
+@media (max-width: 720px) {
+  .group-container {
+    grid-template-columns: 1fr; /* 一列一欄 */
+  }
+  .page2{
+    height: auto;
+  }
+  .resp { flex-direction: column; }
+  .resp .left, .resp .right { width: 100%; flex: none; }
+}  
+</style>
+</head>
+<body>
+  <!-- 頁首 -->
+  <div class="dropdown hidden">
+      <div class = "dropdown-button-area">
+      <button class ="dropdown-button" id="earth">
+          <img src="images/earthB.png" >
+      </button>
+      <p id="langstr" style="color:#043190;">EN</p>
+      </div>
+      <div class="dropdown-content" id="dropdownMenu">
+          <div class="dropdown-content-form"><spin id="str00">選擇語言 </spin>
+              <form id="languageSelector">
+                  <label class="language-option">
+                      <input type="radio" name="language" value="EN" onclick="selectOption(this)">
+                      <span class="custom-radio"></span>
+                      English
+                  </label>
+                  <label class="language-option">
+                      <input type="radio" name="language" value="TW" onclick="selectOption(this)">
+                      <span class="custom-radio"></span>
+                      中文
+                  </label>
+                  <label class="language-option">
+                      <input type="radio" name="language" value="JP" onclick="selectOption(this)">
+                      <span class="custom-radio"></span>
+                      日本語
+                  </label>
+                  <label class="language-option">
+                      <input type="radio" name="language" value="KR" onclick="selectOption(this)">
+                      <span class="custom-radio"></span>
+                      한국인
+                  </label>                    
+              </form>
+          </div>
+      </div>
+  </div>         
+
+
+<div class="resp">
+  <div class="left">
+    <img src="./images/106674939.png" style="width: 100%; height: auto;" >
+    <div class="currentDisp">
+      <div id="currentCall">尚未叫號</div>
+      <p>目前叫號</p> 
+    </div>
+  </div>
+  <div class="center">
+    <div class="badge" aria-hidden="false">
+      <div class="circles" aria-hidden="true">
+        <!-- 根據文字長度調整要放多少個 circle -->
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+      </div>
+      <div class="text" id="storeTitle"></div>
+    </div>
+    <div class = "page1">
+      <div class = "qrcode-container" id="qrcodePage">
+        <div class="qrcode-title">線上候位QR Code</div>
+        <div class="qrcode-bg">
+          <div id="about-qrcode"></div>
+        </div>
+        <div class="qrcode-title2">到號通知</div>
+      </div> 
+    </div>
+    <div class = "page2">
+    <div class="group-container" id="groupContainer">
+      <!-- <div class="group-card" id="card01" onclick="selectcard(this)">
+        <div class="group-title">1~2人</div>
+        <div class="group-info">
+          <span class="icon"><img src="./images/waiting_normal.png"></span>
+          等待組數 <span class="count">11</span> 組
+        </div>
+      </div>
+
+      <div class="group-card" id="card02" onclick="selectcard(this)">
+        <div class="group-title">3~4人</div>
+        
+        <div class="group-info">
+          <span class="icon"><img src="./images/waiting_normal.png"></span>
+          等待組數 <span class="count">15</span> 組
+        </div>
+      </div>
+
+      <div class="group-card" id="card03" onclick="selectcard(this)">
+        <div class="group-title">5~6人</div>
+        
+        <div class="group-info">
+          <span class="icon"><img src="./images/waiting_normal.png" ></span>
+          等待組數 <span class="count">03</span> 組
+        </div>
+      </div>
+
+      <div class="group-card" id="card04" onclick="selectcard(this)">
+        <div class="group-title">7~8人</div>
+        <div class="group-info">
+
+          <span class="icon"><img src="./images/waiting_normal.png"></span>
+          等待組數 <span class="count">00</span> 組
+        </div>
+      </div> 
+      <div class="group-card" id="card05" onclick="selectcard(this)">
+        <div class="group-title">9~10人</div>
+        <div class="group-info">
+
+          <span class="icon"><img src="./images/waiting_normal.png"></span>
+          等待組數 <span class="count">00</span> 組
+        </div>
+      </div>        -->
+    </div>
+    <p class="refresh hidden">過號請重新取號</p>  
+    </div>
+  </div>
+  <div class="right">
+  <div class="arrow-label" onclick="goTakeTicketPage()" id="ticketPageButton" >現場取號</div> 
+  <button class="confirm-button disabled hidden" id="btnConfirm" onclick="doTakeTicket()">確定</button>
+  <!-- <button class="home-button disabled hidden" id="btnhome" onclick="doGoHome()">
+    <img src="./images/home.png">
+  </button>     -->
+
+  </div>
+</div>
+<!-- 備註 -->
+<div class="footer">
+  <img src="images/logo_mini.png">
+  <div id="ver">ver.0.0.1</div>
+</div>
+<!-- 浮動視窗與背景遮罩 -->
+<div class="overlay2" id="modalOverlay" onclick="closeModal()">
+  <div class="modal">
+    <div class="modal-box">
+      <div class="pStore">您的號碼是</div>
+      <div class="pSection" id="nowSection">5~6人</div>
+      <div class="pNumber" id="nowTakeNumber">056</div>
+      <div class="modal-box-info">
+        <!-- <span class="icon">👤</span> -->
+        <span class="modal-box-icon"><img src="./images/waiting_normal.png"></span>
+        等待組數 <span class="modal-box-count">00</span> 組
+      </div>      
+    </div>
+    <!-- <div class = "modal-box">
+        <div class="modal-button" onclick="closeModal()">關閉</div>
+    </div> -->
+  </div>
+</div>  
+<div class="overlay2" id="modalOverlay2">
+  <div class="modal" style="justify-content: center;">
+    <div class="modal-box">
+      <p style="font-size: 2rem;">現在暫停取號</p>
+    </div>
+    <!-- <div class = "modal-box">
+        <div class="modal-button" onclick="closeModal()">關閉</div>
+    </div> -->
+  </div>
+</div>  
+<script>
+  let storename = "誠記越南麵食館-永康總店";
+  let callername = null;
+  let selectId=null;
+  let nowValue=0;
+  let nowUserGetNum = 0;
+  let itemGroup=null;
+  let lastIsOnLineGet = true; //記錄上一個狀態.
+  let txtUsername, base64Encoded;
+  let clientId = null;
+  let userID=null;
+  let isOnlineGet = null;
+  let bClickedAddButton = false;
+  let inactivityTime = 10000; // 10 秒
+  let timer;
+  let nowGetNumItem = null;
+  let ws = null;
+  let reconnecting = false;
+  
+  let initData={
+    caller_id: null,								// 叫號機 id
+    hardware: null,									// 有無實體取號機 (true/fasle).
+    caller_name: null, 
+    curr_num: null,                 // 目前號碼
+    support_get_num: null,          // 支援取號 (true/false)
+    last_get_num: null,             // 最後取號 (若不支援取號服務，此欄為"")
+    get_num_switch: null,           // 取號開關 ("on"/"off") (若不支援取號服務，此欄為"")
+    get_num_item_type:null,         // 取號項目型別 (若不支援"選擇取號項目", 此欄為"")
+    get_num_item_data: null,		    //(取號項目號碼資料)(用來取代 get_num_item_queue)
+    get_num_item_names: null,     	// 取號項目名稱
+    get_num_item_queue: null,       // 取號項目號碼佇列
+    get_num_notes: null,            // 取號需知 (若不顯示取號需知，此欄設為"")(若不支援取號服務，此欄為"")
+    support_reserve_num: null,      // 支援到號保留 (true/false)(若不支援取號服務，此欄為false)
+    reserve_time_limit: null, 			//(到號保留期限)
+    reset_time:null,								//(重置時間)
+    uuid: null // 封包識別碼"support_get_num"(支援取號)
+  };
+  const translations = {
+      EN: {
+        str00:"Select Language",
+        str01: "Now Serving",
+        str02: "Re-take Number",
+        str03: "Click to Get a Number",
+        str04: "Your number:",
+        str05: "Estimated Wait Time (minutes) :"
+      },
+      TW: {
+        str00:"選擇語言",
+        str01: "目前叫號",
+        str02: "重新取號",
+        str03: "點擊取號",
+        str04: "你的號碼：",
+        str05: "預計等待分鐘："
+      },
+      JP: {
+        str00:"言語を選択",
+        str01: "現在呼び出し中",
+        str02: "番号を取り直す",
+        str03: "クリックして番号を取得",
+        str04: "あなたの番号:",
+        str05: "予想待ち時間（分）:"
+      },
+      KR: {
+        str00:"언어 선택",
+        str01: "현재 호출 중",
+        str02: "번호 다시 받기",
+        str03: "클릭하여 번호 받기",
+        str04: "당신의 번호 :",
+        str05: "예상 대기 시간 (분):"
+      } 
+    };
+    // 語系對應表（你可依需求調整）
+    const langMap = {
+        'en': 'EN',
+        'zh': 'TW',
+        'zh-TW': 'TW',
+        'ja': 'JP',
+        'ko': 'KR'
+    };
+  let nowpage=1;
+  let urlParams = new URLSearchParams(window.location.search);
+  let username = urlParams.get("username"); // 若無則給預設值
+  console.log(username);
+  if(username){
+      clientId = username.toLocaleLowerCase();
+  }  
+  userID = generateUserId();  //產生玩家ID.
+
+    //print-ticket 增加這三行
+  let print = urlParams.get("print") || CONFIG.PRINT; // print=1 呼叫 local print server,print=0 不列印
+  let spacing = urlParams.get("spacing") || CONFIG.SPACING; // 每行文字跟下一行中的斷行行高
+  let paper = urlParams.get("paper") || CONFIG.PAPER; // 印表機紙張是 58mm或80mm
+
+
+  const versionMeta = document.querySelector('meta[name="version"]');
+  const version = versionMeta ? versionMeta.getAttribute('content') : '未知版本';
+  document.getElementById('ver').innerText = "ver."+version;
+
+  //todo: 暫時移除語言選擇,直到提供語系翻譯.
+  // const earthbtn = document.getElementById('earth'); //reget.
+  // earthbtn.addEventListener('click', () => {
+  //     //alert("圖片按鈕被點擊了！");
+  //     // 這裡可加入你的其他事件邏輯
+  //     document.getElementById("dropdownMenu").classList.toggle("show");
+  // });
+
+  window.selectOption = (radio)=>{
+      // alert("你選擇了：" + radio.value);
+      document.getElementById('langstr').innerText = radio.value;
+      document.getElementById("dropdownMenu").classList.remove("show");
+      //changeLanguage(radio.value);
+  };
+  function setSelectOption(value){
+      document.getElementById('langstr').innerText = value;
+      //changeLanguage(value);
+      const dropform = document.getElementById("languageSelector");
+      for (let i = 0; i < dropform.length; i++) {
+          if(dropform[i].value === value){
+              dropform[i].checked = true;
+          }
+      }
+  }  
+  function showStorename(){
+      //console.log('showStorename:'+storename);
+      //document.getElementById("storeTitle").innerText = storename;
+      if(callername !== null){
+          document.getElementById("storeTitle").innerText = storename+' ['+callername+']';    
+      }else{
+          document.getElementById("storeTitle").innerText = storename;
+      }      
+  }
+  function showNowNumber(){
+      let paddedNumber = String(nowValue).padStart(3,"0");
+      document.getElementById("currentCall").innerText = paddedNumber;
+  }
+  function showNowGetNumber(){
+    //計算各組等待組數.
+    itemGroup.forEach((obj, idx)=>{
+      let cnt = obj.length;
+      console.log(idx+" "+cnt);
+      setWaitingNumber(idx,cnt);
+    });
+  }
+  function setNumItemData(itemNameList,inData, blogin){
+    console.log('setNumItemData');
+    itemGroup = [];
+    for(const idx in itemNameList){
+      let subGroup=[];
+      itemGroup.push(subGroup);
+    }
+    for (const key in inData ){
+      let numItemData = inData[key];
+      if(numItemData.state === "waiting"){
+        console.log(numItemData);
+        sub=itemGroup[Number(numItemData.get_num_item_id)].push(Number(key));
+        
+      }
+    }
+  }
+
+  function selectcard(card) {
+    const btn = document.getElementById("btnConfirm");
+    // 如果這張卡片已經是選取狀態，就取消選取
+    if (card.classList.contains('selected')) {
+      card.classList.remove('selected');
+      selectId = null;
+      if(!btn.classList.contains('disabled')){
+        btn.classList.add('disabled');
+        btn.disabled = true;
+      }
+      return;
+    }
+
+    // 先移除其他卡片的選取狀態
+    document.querySelectorAll('.group-card').forEach(c => {
+      c.classList.remove('selected');
+    });
+    selectId = card.id;
+    // 套用當前卡片的選取狀態
+    card.classList.add('selected');
+    if(btn.classList.contains('disabled')){
+        btn.classList.remove('disabled');
+        btn.disabled = false;
+    }
+    resetTimer();
+  }
+
+  function goTakeTicketPage(){
+    initPage2();
+  }
+  function doTakeTicket(){
+    //送出取號封包.
+    //openModal();
+    let btn = document.getElementById("btnConfirm");
+    if(!btn.classList.contains('disabled')){
+      btn.classList.add('disabled');
+      btn.disabled = true;
+
+    }
+    console.log(selectId)
+    let id = Number(selectId.replace("card",""))-1;
+    bClickedAddButton = true;
+    sendGetNum(clientId, id);
+    //todo: 
+    resetTimer();
+  }
+  function openModal(getnum, itemid){
+      document.getElementById('modalOverlay').style.display = 'flex';
+      document.getElementById('nowSection').textContent = initData.get_num_item_names[Number(itemid)];
+      document.getElementById('nowTakeNumber').textContent = getnum;
+      let count = document.getElementById('modalOverlay').querySelector('.modal-box-count');
+      let cnt = itemGroup[Number(itemid)].length;
+      if(count){
+        count.textContent = cnt;
+      }
+
+      // document.getElementById('nowTakeNumber').textContent = itemobj.num;
+      // const now = new Date();
+      // document.getElementById("nowTimestamp").innerText = now.toLocaleString('zh-TW', {
+      //     year: 'numeric', month: 'long', day: 'numeric',
+      //     hour: 'numeric', minute: 'numeric', second: 'numeric',
+      //     hour12: false
+      // });
+      //document.getElementById('nowTimestamp').textContent = new Date();
+  }
+  function removeCardSelect(){
+    // 先移除其他卡片的選取狀態
+    document.querySelectorAll('.group-card').forEach(c => {
+      c.classList.remove('selected');
+    });
+    selectId = null;
+    const btn = document.getElementById("btnConfirm");
+    if(!btn.classList.contains('disabled')){
+      btn.classList.add('disabled');
+      btn.disabled = true;
+    }  
+  }
+  function closeModal2(){
+    
+    document.getElementById('modalOverlay2').style.display = 'none';
+  }
+  function openModal2(){
+    document.getElementById('modalOverlay2').style.display = 'flex';
+  }
+  function closeModal(){
+    document.getElementById('modalOverlay').style.display = 'none';
+    removeCardSelect();
+    }
+  function clearSection(){
+    const groupContainer = document.getElementById("groupContainer");
+    groupContainer.innerHTML = ""; // 清空舊的內容
+  }
+  function addSection(groups){
+    const groupContainer = document.getElementById("groupContainer");
+    groups.forEach((title, index) => {
+      const card = document.createElement("div");
+      card.className = "group-card";
+      card.id = `card${String(index + 1).padStart(2, "0")}`;
+      card.onclick = () => selectcard(card);
+
+      // 標題
+      const groupTitle = document.createElement("div");
+      groupTitle.className = "group-title";
+      groupTitle.textContent = title;
+
+      // 資訊
+      const groupInfo = document.createElement("div");
+      groupInfo.className = "group-info";
+
+      const icon = document.createElement("span");
+      icon.className = "icon";
+      const img = document.createElement("img");
+      img.src = "./images/waiting_normal.png";
+      icon.appendChild(img);
+
+      const text = document.createTextNode("等待組數 ");
+      const count = document.createElement("span");
+      count.className = "count";
+      count.textContent = "00"; // 預設 00 組
+      const unit = document.createTextNode(" 組");
+
+      groupInfo.appendChild(icon);
+      groupInfo.appendChild(text);
+      groupInfo.appendChild(count);
+      groupInfo.appendChild(unit);
+
+      card.appendChild(groupTitle);
+      card.appendChild(groupInfo);
+
+      groupContainer.appendChild(card);
+    });
+  }
+    function setWaitingNumber(groupIdx, count){
+      let cardId = `card${String(groupIdx + 1).padStart(2, "0")}`;
+      let  c=document.getElementById(cardId); 
+      if(c){
+        const countSpan = c.querySelector('.count');
+        if (countSpan) {
+          countSpan.textContent = String(count).padStart(2, "0");
+        }
+      }
+    }
+    function drawOnlineGet(mode){
+      if(isOnlineGet=== true){
+        initData.get_num_switch = 'on';
+        closeModal2();
+      }else{
+        initData.get_num_switch = 'off';
+        openModal2();
+      }
+    }
+    function resetData(){
+      itemGroup=[];
+      itemGroup = [];
+      for(const idx in initData.get_num_item_names){
+        let subGroup=[];
+        itemGroup.push(subGroup);
+        setWaitingNumber(idx, 0);
+      }        
+    }
+
+  //generateQRCode();
+    function generateQRCode(){
+      const qrcodecontainer = document.getElementById("about-qrcode");
+      if(!qrcodecontainer){
+        return;
+      }
+    //   console.log(`新的寬度: ${window.innerWidth}px`);
+    //   console.log(`新的高度: ${window.innerHeight}px`);
+
+      let rateX = Math.floor(window.innerWidth*0.18);
+      let rateY =  Math.floor(window.innerHeight*0.18);
+
+      let qWidth = 200;
+      if(rateX > rateY){
+        if(rateY > qWidth){
+            if(rateY > 400){
+                qWidth = 400;
+            }else{
+                qWidth = rateY;
+            }
+        }
+      }else{
+        if(rateX > qWidth){
+            if(rateX > 180){
+                qWidth = 180;
+            }else{
+                qWidth = rateX;
+            }
+        }
+      }
+    
+        qrcodecontainer.innerHTML = "";
+
+        var qrcode = new QRCode(document.getElementById("about-qrcode"), {
+            width: qWidth,
+            height: qWidth,
+        });
+        // var url = "https://line.me/R/oaMessage/@callmeback/?";
+        let url = "https://liff.line.me/2003918297-NKaR4P9w/?shop_name=";
+        let nurl = url+encodeURI(storename);
+        // 進行 URL 編碼（中文等特殊字元會被轉為百分比編碼）
+        if(callername!== null){
+            nurl=url+encodeURI(storename)+"&caller_name="+encodeURI(callername);
+        }        
+        // 進行 URL 編碼（中文等特殊字元會被轉為百分比編碼）
+        qrcode.makeCode(nurl);
+    }
+
+  window.addEventListener("load",()=>{
+    generateQRCode();
+  });
+  // 在網頁加載完成後自動呼叫 connectWebSocket
+  window.onload = function () {
+      const userLang = navigator.language || navigator.userLanguage; // e.g., "zh-TW"
+      const shortLang = userLang.split('-')[0]; // e.g., "zh"
+      
+      // 優先使用完整語言碼（例如 zh-TW），其次用簡寫（zh）
+      const selectedValue = langMap[userLang] || langMap[shortLang];
+      if(!selectedValue){
+          selectedValue = 'EN';
+      }
+      if (selectedValue) {
+          console.log(selectedValue);
+          setSelectOption(selectedValue); // 若你需要同步執行自定函式
+      }
+      initPage1();
+      ws = createWebSocket();
+  };
+      //-----------------------------------------------------------------------
+    let wsSendLogin = (txtUsername, txtPasswordHash) => {
+      if (!ws) {
+          return;
+      }
+      if (!ws) return;
+      //const msg = `${username},AUTH,${password}`;
+      const msg = `{"action": "login","vendor_id": "tawe","caller_id": "${txtUsername}","password":"${txtPasswordHash}","uuid": ""}`;  
+      ws.send(msg);
+    };
+
+    function sendGetNum(callerId, itemID) {
+      const msg = {
+        action: "user_get_num",
+        vendor_id: "tawe",
+        caller_id: callerId,
+        user_id: userID,
+        get_num_item_id: itemID.toString(),
+        for_customer:true,
+        uuid: ""
+      };
+      ws.send(JSON.stringify(msg));
+      console.log(`發送 user_get_num 請求`);
+    }
+
+    function tryReconnect() {
+      if (reconnecting) {
+        console.log("[WS] Reconnect skipped (already trying)");
+        return;
+      }
+      reconnecting = true;
+      ws.reconnecting();
+      // setTimeout(() => {
+      //   console.log("[WS] Reconnecting...");
+      //   createWebSocket(clientId, label);
+      // }, 3000); // 3 秒後重試
+    }
+    
+    let createWebSocket = () => {
+        console.log(`[WS] createWebSocket called,  existing?`, ws);
+
+        if (ws && ws.readyState !== WebSocket.CLOSED) {
+          console.warn("[WS] Skip create, connection still alive");
+          return ws;
+        }
+
+        //ws = new WebSocket('wss://cmb-caller-frontend-410240967190.asia-east1.run.app/');		//Live.
+        ws = new window.MyWebSocketLow('wss://cmb-caller-frontend-410240967190.asia-east1.run.app/');		//Live.
+		    //ws = new window.MyWebSocketLow('wss://cmb-caller-frontend-306511771181.asia-east1.run.app/');     //Trial.
+        ws.id = clientId;
+        // ws.onmessage = (data) => {
+        ws.onmessage = (data) => {
+          
+          //console.log('[WebSocket 收到回傳資料]', data);
+
+				  let len = data.length;
+				  if(len > 1){
+            const cmd = data[data.length - 1];
+            if (cmd && cmd.toLowerCase() === 'auth') {
+                const state = data[0];
+                if (state === 'OK') {
+                    console.log('驗證通過');
+                    agentName = data[1];
+                } else {
+                    const errorCode = data[1];
+                    if (errorCode === '001' || errorCode === '002') {
+                        console.log('驗證失敗');
+                    }
+                }
+            }
+          }else{
+            //json.
+            if(data.action ==="login"){
+              if(data.result==="OK"){
+                console.log('驗證通過');
+                // 叫號機名稱
+                if(data.caller_name!== undefined){
+                  agentName = data.caller_name;
+                  initData.caller_name = data.caller_name;
+                  storename=agentName;
+                  if(agentName.indexOf(';;') !== -1){
+                    let str2=agentName.split(';;');
+                    storename = str2[0];
+                    callername = str2[1];
+                  }                     
+                  showStorename();
+                }
+                // 目前號碼
+                if(data.curr_num!== undefined){
+                  nowValue = data.curr_num;
+                  initData.curr_num = data.curr_num;
+                  showNowNumber();
+                }
+                // 支援取號 (true/false)
+                if(data.support_get_num!== undefined){
+                  initData.support_get_num = data.support_get_num;
+                }
+                // 最後取號 (若不支援取號服務，此欄為"")
+                if(data.last_get_num!== undefined){
+                  initData.last_get_num = data.last_get_num;
+                }
+                // 取號開關 ("on"/"off") (若不支援取號服務，此欄為"")
+                if(data.get_num_switch!== undefined){
+                  initData.get_num_switch = data.get_num_switch;
+                  if(data.get_num_switch === 'on'){
+                      isOnlineGet = true;
+                  }else if(data.get_num_switch === 'off'){
+                      isOnlineGet = false;
+                  }                  
+                  drawOnlineGet();
+                }
+                // 取號項目型別 (若不支援"選擇取號項目", 此欄為"")
+                if(data.get_num_item_type!== undefined){
+                  initData.get_num_item_type = data.get_num_item_type;
+                }
+                // 取號項目名稱
+                if(data.get_num_item_names!== undefined){
+                  initData.get_num_item_names = data.get_num_item_names;
+                  if(initData.get_num_item_names !== ""){
+                    clearSection();
+                    addSection(initData.get_num_item_names);
+                  }
+                }
+                // (取號項目號碼資料)
+                if(data.get_num_item_data!== undefined){
+                  initData.get_num_item_data = data.get_num_item_data;
+                  setNumItemData(initData.get_num_item_names, initData.get_num_item_data ,true);
+                  showNowGetNumber();
+                }	                
+                // 取號項目號碼佇列
+                if(data.get_num_item_queue!== undefined){
+                  initData.get_num_item_queue = data.get_num_item_queue;
+                }
+                // 取號需知 (若不顯示取號需知，此欄設為"")(若不支援取號服務，此欄為"")
+                if(data.get_num_notes!== undefined){
+                    initData.get_num_notes = data.get_num_notes;
+                    // showNotices(initData.get_num_notes);
+                }
+                // 支援到號保留 (true/false)(若不支援取號服務，此欄為false)							
+                if(data.support_reserve_num!== undefined){
+                    initData.support_reserve_num = data.support_reserve_num;
+                }	
+                //(到號保留期限)	
+                if(data.reserve_time_limit!== undefined){
+                    initData.reserve_time_limit = data.reserve_time_limit;
+                }	
+                //(重置時間)			
+                if(data.reset_time!== undefined){
+                    initData.reset_time = data.reset_time;
+                    // if(nowUserGetNumTime){
+                    //     let bReset = checkTimeOut(nowUserGetNumTime);
+                    //     console.log(bReset);
+                    //     if(bReset === true){
+                    //         console.log('breset=true 將reItemGroup歸零,且儲存清零');
+                    //         clearGetNumTime();
+                    //         clearData();
+                    //         nowUserGetNumTime=null;
+                    //         nowUserGetNumValue = null;
+                    //         nowWaitTimeValue = null;
+                    //         lockUserGetNum = false;
+                    //         screenInit();                        
+                    //     }
+                    // }
+                }		
+                // 封包識別碼"support_get_num"(支援取號)
+                if(data.uuid!== undefined){
+                  initData.uuid = data.uuid;
+                }
+              } else {
+                const errorCode = data[1];
+                if (errorCode === '001' || errorCode === '002') {
+                  console.log('驗證失敗');
+                }
+              }
+            }	            
+          }
+        };
+        ws.onopen = async () => {
+            //console.log('[WebSocket 開啟成功]');
+            
+            const txtPassword = '88888888';
+            console.log(`WebSocket 開啟`);
+          // 1. 計算 SHA-256 雜湊值
+            const sha256Hash = CryptoJS.SHA256(txtPassword);
+            // 2. 將雜湊值轉換為 Base64 編碼
+            base64Encoded = sha256Hash.toString(CryptoJS.enc.Base64);
+            txtUsername = clientId;
+            
+            wsSendLogin(txtUsername, base64Encoded);            
+        };
+        ws.onclose = () => {
+            //console.warn('[WebSocket 已關閉]');
+            console.log("[WS] CLOSE", e.code, e.reason);
+            if (!reconnecting) tryReconnect();
+            
+        };
+        ws.onerror = (err) => {
+            console.error('[WebSocket 錯誤]', err);
+        };
+        ws.addEventListener('message', (data) => {
+            console.log('[WebSocket 收到回傳資料]', data);
+
+            let len = data.length;
+            //console.log(data);
+
+            //if(len > 1){
+            if(len > 1 && data[0]==="OK"){            
+                let cmd = data[len-1];
+                if(data[0]==="OK" && data[1] ===clientId)
+                {
+                    if(cmd === 'send' && len === 4){
+                        console.log('send'+data);
+                    }else if(cmd === 'get'&& len === 4){
+                        nowValue = data[2];
+                        showNowNumber();
+                        showNowGetNumber();
+                        
+                    }else if(cmd === 'update'&& len === 4){ 
+                        nowValue = data[2];
+                        showNowNumber(data[2]);
+
+                        if((initData)&&(initData.get_num_item_type !== "")){
+                            if(Number(nowValue) === 0){
+                                //server送reset.
+                                resetData();
+                            }else{
+                              if(initData.get_num_item_data) {
+                                let obj2=  initData.get_num_item_data[data[2]];
+                                if(obj2){
+                                  obj2.called_time = new Date().getTime();
+                                  obj2.state = "called";
+                                }
+                                let section = obj2.get_num_item_id;
+
+                                let pidx = itemGroup[Number(section)].indexOf(Number(data[2]));
+                                if(pidx!== -1){
+                                  itemGroup[Number(section)].splice(pidx,1); 
+                                }
+                                showNowGetNumber();
+                              } 
+                            }
+                        }else{
+                            // if(Number(nowValue)<= Number(nowUserGetNum)){
+                            //     let less = Number(nowUserGetNum)-Number(nowValue);
+                            //     nowLessValue = less.toString();
+                            // }else{
+                            //     nowLessValue = 0;
+                            // }
+                            showNowGetNumber();
+                        }
+                        
+                    }else if(cmd === 'get_num_info' && len ===5){
+                        nowUserGetNum = data[2];
+                        if(Number(nowValue)<= Number(nowUserGetNum)){
+                            let less = Number(nowUserGetNum)-Number(nowValue);
+                            nowLessValue = less.toString();
+                        }else{
+                            nowLessValue = 0;
+                        }
+                        showNowGetNumber();
+                    }    
+                }
+            }else if(data[0]!=="Fail"){
+                //json格式.
+                //console.log(data);
+                let obj = data;
+                if((obj.result === 'OK') && (obj.caller_id === clientId)){
+                    if(obj.action === 'get_num_status'){
+                        if(obj.switch === 'on'){
+                            isOnlineGet = true;
+                        }else if(obj.switch === 'off'){
+                            isOnlineGet = false;
+                        }
+                        lastIsOnLineGet = isOnlineGet;
+                        drawOnlineGet(true);
+                    }else if(obj.action === 'get_num_switch'){
+                        if(obj.switch === 'on'){
+                            isOnlineGet = true;
+                        }else if(obj.switch === 'off'){
+                            isOnlineGet = false;
+                        }
+                        lastIsOnLineGet = isOnlineGet;
+                        drawOnlineGet(true);                    
+                    }else if(obj.action  === 'user_get_num'){
+                        console.log('web取號.');
+                        if(obj.get_num){
+                          nowUserGetNum = obj.get_num;
+                        }
+                        if(initData.get_num_item_data) {
+                          let obj2= {
+                            called_time:"",
+                            for_customer: obj.for_customer || false,
+                            get_from_web: obj.get_from_web || false,
+                            get_num_item_id: obj.get_num_item_id,
+                            state: "waiting"
+                          };
+                          initData.get_num_item_data[obj.get_num] = obj2;
+
+                          if(itemGroup[Number(obj.get_num_item_id)].indexOf(obj.get_num) === -1){
+                             itemGroup[Number(obj.get_num_item_id)].push(obj.get_num); 
+                          }
+                          showNowGetNumber();
+                          // if(bClickedAddButton === true){
+                          //     openModal(obj.get_num, obj.get_num_item_id);
+                          // }
+                          if(bClickedAddButton === true){
+                            removeCardSelect();
+                            bClickedAddButton = false; 
+                          }
+                          if(obj.get_num_item_id){
+                            nowGetNumItem =  initData.get_num_item_names[Number(obj.get_num_item_id)];
+                            console.log(nowGetNumItem);
+                          }
+                          if(obj.user_id === userID) {
+                            //本機取號.  
+                            //print-ticket 增加
+                            if (print === "1") {
+                                printTicket(storename,callername,nowGetNumItem,nowUserGetNum,spacing,paper);    
+                            }                              
+                          }
+                        } 
+                    }else if(obj.action === 'get_num_info'){
+                        console.log('get_num_info');
+                        if(obj.curr_num){
+                          nowValue = data.curr_num;
+                          initData.curr_num = data.curr_num;
+                          showNowNumber();
+                        }
+                        if(obj.get_num_item_type !== ""){
+                          if(obj.get_num_item_names!==""){
+                            initData.get_num_item_names = obj.get_num_item_names;
+                            let cnt = initData.get_num_item_names.length;
+                            if(cnt === 1){
+                                bfullScreen = true;
+                            }     
+                            clearSection();                       
+                            addSection(initData.get_num_item_names);
+                          }
+                          if(obj.get_num_item_data !==""){
+                            initData.get_num_item_data = [];
+                            initData.get_num_item_data = obj.get_num_item_data;
+                            setNumItemData(initData.get_num_item_names, initData.get_num_item_data ,false);
+                            showNowGetNumber();
+                          }
+                        }
+                    }else if(obj.action === 'web_cancel_get_num'){
+                        console.log(obj);
+                        //取消取號(web使用者).
+                        if(obj.cancel_num){
+                            //移除消取號.remove.
+                            let objdata = initData.get_num_item_data[obj.cancel_num.toString()];
+                            if(objdata!==undefined){
+                              initData.get_num_item_data[obj.cancel_num.toString()].state = "removed";
+                              let sectionid = initData.get_num_item_data[obj.cancel_num.toString()].get_num_item_id;
+                              let cidx = itemGroup[Number(sectionid)].indexOf(obj.cancel_num);
+                              if(cidx !== -1){
+                                itemGroup[Number(sectionid)].splice(cidx,1);  //移除取消號.
+                              }
+                              showNowGetNumber();
+                            }
+                        }  
+                    }else if(obj.action === 'remove_number'){
+                        console.log(obj);
+                        //移除號碼.
+                        if(obj.remove_num){
+                            //移除消取號.remove.
+                          let objdata = initData.get_num_item_data[obj.remove_num.toString()];
+                          if(objdata!==undefined){
+                            initData.get_num_item_data[obj.remove_num.toString()].state = "removed";
+                            let sectionid = initData.get_num_item_data[obj.remove_num.toString()].get_num_item_id;
+                            let cidx = itemGroup[Number(sectionid)].indexOf(obj.remove_num);
+                            if(cidx !== -1){
+                              itemGroup[Number(sectionid)].splice(cidx,1);  //移除取消號.
+                            }
+                            showNowGetNumber();   
+                          }               
+                        }
+                    }
+                }else if((obj.caller_id === clientId) && (obj.action  === 'new_get_num')){
+                    console.log('new_get_num 2 WEB 取號');
+                    if((obj.curr_num) && (obj.curr_num !== "")){
+                        nowUserGetNum = obj.curr_num;
+                    }else{
+                        //result fail.
+                        return;
+                    }
+                    if(initData.get_num_item_data) {
+                      let obj2= {
+                        called_time:"",
+                        for_customer: obj.for_customer || false,
+                        get_from_web: obj.get_from_web || false,
+                        get_num_item_id: obj.get_num_item_id,
+                        state: "waiting"
+                      };
+                      initData.get_num_item_data[obj.get_num] = obj2;
+
+                      if(itemGroup[Number(obj.get_num_item_id)].indexOf(obj.get_num) === -1){
+                          itemGroup[Number(obj.get_num_item_id)].push(obj.get_num); 
+                      }
+                      showNowGetNumber();
+                    } 
+                }else if((obj.caller_id === clientId)&&(obj.action === 'cancel_get_num')){
+                    console.log(obj);
+                    //取消取號(Line使用者).
+                    if(obj.cancel_num){
+                        //移除消取號.remove.
+                        let objdata = initData.get_num_item_data[obj.cancel_num.toString()];
+                        if(objdata!==undefined){
+                          initData.get_num_item_data[obj.cancel_num.toString()].state = "removed";
+                          let sectionid = initData.get_num_item_data[obj.cancel_num.toString()].get_num_item_id;
+                          let cidx = itemGroup[Number(sectionid)].indexOf(obj.cancel_num);
+                          if(cidx !== -1){
+                            itemGroup[Number(sectionid)].splice(cidx,1);  //移除取消號.
+                          }
+                          showNowGetNumber();
+                        }
+                    }    
+                }else if((obj.caller_id === clientId)&& (obj.action === 'reserve_number')){
+                    //到號保留：(中央主動傳送)
+                    //if(obj.reserve === true){
+                        //轉成保留色號.
+                    //    reserveNumItem(Number(obj.number));
+                    console.log('到號保留：(中央主動傳送) '+obj.reserve);
+                    if(obj.reserve === false){
+                        //移除保留.remove.
+                        /*unreserveNumItem(Number(obj.number));*/
+                    }     
+                    
+                }else if((obj.result) && (obj.result!=="OK")){
+                    //Fail判斷.
+                    console.log(obj.result);
+                    let errCode = obj.result.split(/[,:]/);
+                    if(errCode[0] ==='Fail'){
+                        let codeNum = errCode[1].trim();
+                        console.log(errCode[1]);
+                        if(lastIsOnLineGet!==isOnlineGet){
+                            isOnlineGet = lastIsOnLineGet;
+                            drawOnlineGet(true);  
+                        }
+                    }
+                    bClickedAddButton = false;
+                }
+            }else if(data[0]==="Fail"){
+                let cmd = data[len-1];
+                let errorNum = data[1].substr(0, 3);
+                //console.log('cmd:'+cmd+' data[1]:'+data[1]+ ' errorNum:'+errorNum);
+                if((cmd === 'get_num_info') && (errorNum==='007')){
+                    hideGetNumberInfo();
+                }
+                if(lastIsOnLineGet!==isOnlineGet){
+                    console.log(data[1]);
+                    isOnlineGet = lastIsOnLineGet;
+                    drawOnlineGet(true);  
+                }
+                bClickedAddButton = false;
+            }
+        });
+
+        return ws;
+    };
+
+    //-----------------------------------------------------------------------
+    
+	function generateUserId() {
+      // 產生一組隨機字串（UUID v4 簡化版）
+      const userid = 'xxxxxxxxyxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        return r.toString(16);
+      });
+      
+	  return userid.toUpperCase();
+      //document.getElementById('userId').textContent = `使用者 ID: ${userId}`;
+  }
+  function initPage1(){
+    nowpage = 1;
+    document.querySelectorAll('.page2').forEach(c => {
+      if(!c.classList.contains('hidden')){
+        c.classList.add('hidden');
+      }
+    });
+
+    const groupcards = document.getElementById("groupContainer");
+    const btn = document.getElementById("btnConfirm");
+    if(!groupcards.classList.contains('hidden')){
+      groupcards.classList.add('hidden');
+    }
+    if(!btn.classList.contains('hidden')){
+      btn.classList.add('hidden');
+    }
+    if(!btn.classList.contains('disabled')){
+      btn.classList.add('disabled');
+      btn.disabled = true;
+    }
+
+    document.querySelectorAll('.refresh').forEach(c => {
+      if(!c.classList.contains('hidden')){
+        c.classList.add('hidden');
+      }
+    });
+    // const btnhome = document.getElementById("btnhome");
+    // if(!btnhome.classList.contains('hidden')){
+    //   btnhome.classList.add('hidden');
+    // }
+    // if(!btnhome.classList.contains('disabled')){
+    //   btnhome.classList.add('disabled');
+    //   btnhome.disabled = true;
+    // }
+    document.querySelectorAll('.page1').forEach(c => {
+      if(c.classList.contains('hidden')){
+        c.classList.remove('hidden');
+      }
+    });
+
+    const qrcodepage = document.getElementById("qrcodePage");
+    const btn1 = document.getElementById("ticketPageButton");
+    if(qrcodePage.classList.contains('hidden')){
+      qrcodePage.classList.remove("hidden");
+    }
+    if(btn1.classList.contains('hidden')){
+      btn1.classList.remove("hidden");
+    }
+    if(btn1.classList.contains('disabled')){
+      btn1.classList.remove("disabled");
+      btn1.disabled = false;
+    }    
+  }
+  // function doGoHome(){
+  //   initPage1();
+  // }
+  function initPage2(){
+    nowpage = 2;
+    document.querySelectorAll('.page1').forEach(c => {
+      if(!c.classList.contains('hidden')){
+        c.classList.add('hidden');
+      }
+    });    
+    const qrcodepage = document.getElementById("qrcodePage");
+    const btn1 = document.getElementById("ticketPageButton");
+    if(!qrcodePage.classList.contains('hidden')){
+      qrcodePage.classList.add("hidden");
+    }
+    if(!btn1.classList.contains('hidden')){
+      btn1.classList.add("hidden");
+    }
+    if(!btn1.classList.contains('disabled')){
+      btn1.classList.add("disabled");
+      btn1.disabled = true;
+    }
+
+    document.querySelectorAll('.page2').forEach(c => {
+      if(c.classList.contains('hidden')){
+        c.classList.remove('hidden');
+      }
+    });
+    const groupcards = document.getElementById("groupContainer");
+    const btn = document.getElementById("btnConfirm");
+    if(groupcards.classList.contains('hidden')){
+      groupcards.classList.remove('hidden');
+    }
+    if(btn.classList.contains('hidden')){
+      btn.classList.remove('hidden');
+    }    
+    removeCardSelect();
+    document.querySelectorAll('.refresh').forEach(c => {
+      if(c.classList.contains('hidden')){
+        c.classList.remove('hidden');
+      }
+    });
+    // const btnhome = document.getElementById("btnhome");
+    // if(btnhome.classList.contains('hidden')){
+    //   btnhome.classList.remove('hidden');
+    // }
+    // if(btnhome.classList.contains('disabled')){
+    //   btnhome.classList.remove('disabled');
+    //   btnhome.disabled = false;
+    // }
+    resetTimer();
+  }
+
+  function resetTimer() {
+    if(timer){
+      clearTimeout(timer);
+    }
+    
+    // timer = setTimeout(() => {
+    //   //window.location.href = "otherpage.html"; // 這裡換成你要跳轉的網址
+    //   if(nowpage === 2){
+    //     clearTimeout(timer);
+    //     initPage1();
+    //   }
+    // }, inactivityTime);
+  }
+  
+  
+
+
+</script>    
+</body>
+</html>
