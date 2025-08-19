@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="version" content="1.0.9">
+<meta name="version" content="1.0.10">
 <script src="./js/qrcode.min.js"></script>
 <script src="./js/crypto-js.min.js"></script>
 <script src="./js/localforage.min.js"></script>
@@ -18,14 +18,14 @@
 <style>
   :root{
     --orange: #f58600; /* 可調整橘色 */
-    --circle-size: 84px; /* 圓直徑，可改 */
-    --overlap: -22px; /* 重疊量（負值） */
+    --circle-size: clamp(84px, 10vw, 18vh);/*84px*/ /* 圓直徑，可改 */
+    --overlap: clamp( -4.5vh,-2.5vw ,-22px); /*-22px;*/ /* 重疊量（負值） */
   }
 
   body{
     font-family: "Noto Sans TC", "Helvetica Neue", Arial;
     background: #fff;
-    padding: 48px;
+    /* padding: 48px; */
     overflow: hidden;
   }
   .dropdown {
@@ -127,6 +127,15 @@
   .language-option input[type="radio"]:checked + .custom-radio::before {
       content: '✔'; /* 打勾勾符號 */
   }
+  .storelogo{
+    width: 80%; 
+    height: auto;
+  }
+  .storelogo img{
+    width: 100%;
+    height: auto;
+  }
+
   .badge {
     position: relative;
     display: inline-flex;
@@ -170,7 +179,7 @@
     position: relative;
     z-index: 2;
     color: white;
-    font-size: 28px;
+    font-size: clamp(28px,3vw, 2.8rem);
     letter-spacing: 2px;
     white-space: nowrap;
     padding: 0 8px;
@@ -183,7 +192,7 @@
   color: white;
   font-size: 20px;
   font-family: "Microsoft JhengHei", sans-serif;
-  padding: 6px 20px;
+  padding: 20px 20px;
   line-height: 1.4;
   /* position: absolute;
   bottom: 0; */
@@ -211,23 +220,27 @@
 }
 .currentDisp p{
   color: #043190;
-  font-size: 1rem;
+  font-size: 1.2rem;
   margin: 0;
 }
 #currentCall {
-  background-color: black;
-  color: red;
-  padding: 0px 12px;
-  border-radius: 6px;
-  /*font-family: 'Courier New', Courier, monospace;*/
-  font-weight: bold;
-  font-size: 1.5rem; /* 可依需求調整大小 */
-  text-align: center;
-  justify-content: center;
-  display: flex;
-  align-items: center;
-  margin: 0 8px 0 8px;
-  width: 80%;
+    background-color: black;
+    color: red;
+    padding: 1vh 1vw; 
+    border-radius: 6px;
+    font-family: "Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+    /*/font-variant-east-asian: full-width;*/
+    font-weight: bold;
+    font-size: clamp(30px, 4vw, 4rem);
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    /* margin: 0 8px 0 8px; */
+    width: 10vw;
+    height: auto;
+    margin-top: 2vh;
+    letter-spacing: 3px;
 } 
 .page1{
     display: flex;
@@ -291,13 +304,15 @@ button.confirm-button {
   border-radius: 10px;
   transition: background-color 0.3s ease, transform 0.2s;
   cursor: pointer;
-  height: auto;
-  margin-left: auto;
+  /*height: auto;*/
+  /*margin-left: auto;*/
   color: white;
-  font-size: 20px;
-  padding: 6px 20px;
+  font-size: 2.5rem;
+  /* padding: 20px 20px; */
   line-height: 1.4;
-  width:100%;
+  width:160px;
+  height: 160px;
+  margin: 0px 10px 8vh;
 }
 
 button.confirm-button:hover {
@@ -339,17 +354,17 @@ button.home-button:hover img {
 
 
 .page2{
-    display: flex;
-    width: 80%;
-    min-width: 300px;
-    height: 60vh;
-    padding: 24px;
-    grid-template-rows: 1fr auto;
-    gap: 12px;
-    overflow: hidden;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
+  display: flex;
+  width: 100%;
+  min-width: 300px;
+  height: auto;
+  padding: 10px 24px;
+  grid-template-rows: 1fr auto;
+  /* gap: 12px; */
+  overflow: hidden;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
 }
 .group-container {
   /* display: flex;
@@ -370,12 +385,13 @@ button.home-button:hover img {
   /* padding: 15px 20px; */
   padding: 15px 10px;
   min-width: 150px;
-  width: 18vw;
+  width: 28vw;
+  height: 24vh;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .group-title {
-    font-size: 2.2rem;
+    font-size: 4.5rem;
     margin-bottom: 10px;
     display: flex;
     justify-content: center;
@@ -384,23 +400,25 @@ button.home-button:hover img {
 }
 
 .group-info {
-    font-size: 1rem;
+    font-size: 1.8rem;
     display: flex;
     align-items: center;
     justify-content: center;  
+    color: #75a0f9;
 }
 
 .icon {
-  margin-right: 4px;
+  margin-right: 8px;
 }
 .icon img{
   width: auto;
-  height: 30px;
+  height: 50px;
 }
 
 .count {
-  color: orange;
+  color: #F68200;
   font-weight: bold;
+  margin: 0 8px 0 8px;
 }
 
 /* 選取狀態的樣式 */
@@ -421,8 +439,8 @@ button.home-button:hover img {
 }
 
 .refresh {
-  margin-top: 15px;
-  font-size: 1rem;
+  margin: 15px 0 0 0;
+  font-size: 1.5rem;
   color: #043190;
 }
 
@@ -527,7 +545,7 @@ button.home-button:hover img {
   display: none;
 }
 .footer {
-    margin-left: -56px;
+    /* margin-left: -56px; */
     /* max-width: 600px; */
     display: flex;
     position: relative;
@@ -542,8 +560,8 @@ button.home-button:hover img {
 }
 .resp { display:flex; gap:12px; padding:12px;  }
 /* .resp > * { padding:10px; background:#fff; border:1px solid #ddd; } */
-.resp > * { padding:10px; background:#fff;}
-.resp .left, .resp .right { flex: 0 0 140px; }
+.resp > * { /*padding:10px;*/ background:#fff;}
+.resp .left, .resp .right { flex: 0 0 16vw; }
 .resp .center { 
   flex:1; 
   min-width:0; 
@@ -552,11 +570,22 @@ button.home-button:hover img {
   align-items: center;
   
 }
-.resp .right {
+.resp .left {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    /* align-content: center; */
+    align-items: center;
+}
+.resp .right {
+    /*display: flex;*/
+    /*align-items: flex-end;*/
     /* flex-direction: column-reverse; */
-    justify-content: space-between;
+    /*justify-content: space-between;*/
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 
@@ -564,14 +593,60 @@ button.home-button:hover img {
 @media (max-width: 480px){
   :root{ --circle-size: 64px; --overlap: -18px; }
   .badge .text{ font-size: 18px; letter-spacing: 1px; }
+  #currentCall {
+    font-size: 1.5rem;
+  }  
+  .group-title{
+    font-size: 1.5rem;
+  }
+  .group-info {
+    font-size: 0.8rem;
+  }
+  .icon img{
+    height: 25px;
+  }  
 }
 /* 小螢幕改成直列 */
 @media (max-width: 720px) {
+  body{
+    overflow:auto;
+  }
   .group-container {
     grid-template-columns: 1fr; /* 一列一欄 */
   }
+  .page1{
+    height: auto;
+  }
   .page2{
     height: auto;
+  }
+  .group-card {
+    width: auto;
+    height: auto;
+  }
+  .group-title{
+    font-size: 2rem;
+  }
+  .group-info {
+    font-size: 1rem;
+  }
+  .icon img{
+    height: 30px;
+  }
+  #currentCall {
+    padding: 1vw 1vh;
+    font-size: clamp(30px, 4vh, 4rem);
+    padding: 1vh 1vw; 
+    width: 60vw;
+    margin-top: 0;
+  }
+  button.confirm-button {
+    width: 100%;
+    height: auto;
+  }
+  .storelogo{
+    height: auto;
+    width: 40%;
   }
   .resp { flex-direction: column; }
   .resp .left, .resp .right { width: 100%; flex: none; }
@@ -618,9 +693,12 @@ button.home-button:hover img {
 
 <div class="resp">
   <div class="left">
-    <img src="./images/106674939.png" style="width: 100%; height: auto;" >
+    <div class="storelogo">
+      <img src="./images/106674939.png" style="" >
+    </div>
+    
     <div class="currentDisp">
-      <div id="currentCall">尚未叫號</div>
+      <div id="currentCall">000</div>
       <p>目前叫號</p> 
     </div>
   </div>
@@ -1719,13 +1797,13 @@ button.home-button:hover img {
       clearTimeout(timer);
     }
     
-    // timer = setTimeout(() => {
-    //   //window.location.href = "otherpage.html"; // 這裡換成你要跳轉的網址
-    //   if(nowpage === 2){
-    //     clearTimeout(timer);
-    //     initPage1();
-    //   }
-    // }, inactivityTime);
+    timer = setTimeout(() => {
+      //window.location.href = "otherpage.html"; // 這裡換成你要跳轉的網址
+      if(nowpage === 2){
+        clearTimeout(timer);
+        initPage1();
+      }
+    }, inactivityTime);
   }
 
 

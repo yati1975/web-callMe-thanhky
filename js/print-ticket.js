@@ -32,7 +32,8 @@ function printTicket(storename,callername,nowGetNumItemTitle,nowUserGetNumValue,
     number: 100,
     tip: 30,
     time: 25,
-    qrsize: 300
+    qrsize: 300,
+    paper: paper
   };
   const sizes80 = {
     space: 0,
@@ -42,7 +43,8 @@ function printTicket(storename,callername,nowGetNumItemTitle,nowUserGetNumValue,
     number: 140,
     tip: 40,
     time: 35,
-    qrsize: 300
+    qrsize: 300,
+    paper
   };
 
   // 根據 paper 選對字型組
