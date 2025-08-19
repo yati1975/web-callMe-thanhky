@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="version" content="1.0.7">
+<meta name="version" content="1.0.9">
 <script src="./js/qrcode.min.js"></script>
 <script src="./js/crypto-js.min.js"></script>
 <script src="./js/localforage.min.js"></script>
@@ -26,6 +26,7 @@
     font-family: "Noto Sans TC", "Helvetica Neue", Arial;
     background: #fff;
     padding: 48px;
+    overflow: hidden;
   }
   .dropdown {
       display: flex;
@@ -281,8 +282,9 @@
   border-radius: 5px;
   border: 1px solid white;
   box-sizing: border-box; 
+  pointer-events: none; /* 禁止點擊 */
+  cursor: default;      /* 游標不會變成手指 */
 }
-
 button.confirm-button {
   background-color: #FD5126;
   border: none;
@@ -573,7 +575,7 @@ button.home-button:hover img {
   }
   .resp { flex-direction: column; }
   .resp .left, .resp .right { width: 100%; flex: none; }
-}  
+} 
 </style>
 </head>
 <body>
@@ -751,7 +753,7 @@ button.home-button:hover img {
   let timer;
   let nowGetNumItem = null;
   let ws = null;
-  let reconnecting = false;
+  //let reconnecting = false;
   
   let initData={
     caller_id: null,								// 叫號機 id
@@ -873,7 +875,7 @@ button.home-button:hover img {
     //計算各組等待組數.
     itemGroup.forEach((obj, idx)=>{
       let cnt = obj.length;
-      console.log(idx+" "+cnt);
+      //console.log(idx+" "+cnt);
       setWaitingNumber(idx,cnt);
     });
   }
@@ -887,7 +889,7 @@ button.home-button:hover img {
     for (const key in inData ){
       let numItemData = inData[key];
       if(numItemData.state === "waiting"){
-        console.log(numItemData);
+        //console.log(numItemData);
         sub=itemGroup[Number(numItemData.get_num_item_id)].push(Number(key));
         
       }
@@ -1101,6 +1103,8 @@ button.home-button:hover img {
         }        
         // 進行 URL 編碼（中文等特殊字元會被轉為百分比編碼）
         qrcode.makeCode(nurl);
+        //document.getElementById("about-qrcode").
+
     }
 
   window.addEventListener("load",()=>{
@@ -1148,18 +1152,18 @@ button.home-button:hover img {
       console.log(`發送 user_get_num 請求`);
     }
 
-    function tryReconnect() {
-      if (reconnecting) {
-        console.log("[WS] Reconnect skipped (already trying)");
-        return;
-      }
-      reconnecting = true;
-      ws.reconnecting();
-      // setTimeout(() => {
-      //   console.log("[WS] Reconnecting...");
-      //   createWebSocket(clientId, label);
-      // }, 3000); // 3 秒後重試
-    }
+    // function tryReconnect() {
+    //   if (reconnecting) {
+    //     console.log("[WS] Reconnect skipped (already trying)");
+    //     return;
+    //   }
+    //   reconnecting = true;
+    //   ws.reconnecting();
+    //   // setTimeout(() => {
+    //   //   console.log("[WS] Reconnecting...");
+    //   //   createWebSocket(clientId, label);
+    //   // }, 3000); // 3 秒後重試
+    // }
     
     let createWebSocket = () => {
         console.log(`[WS] createWebSocket called,  existing?`, ws);
@@ -1168,6 +1172,10 @@ button.home-button:hover img {
           console.warn("[WS] Skip create, connection still alive");
           return ws;
         }
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          console.log("已有 WebSocket 連線，不再重建");
+          return ws;
+        }        
 
         //ws = new WebSocket('wss://cmb-caller-frontend-410240967190.asia-east1.run.app/');		//Live.
         ws = new window.MyWebSocketLow('wss://cmb-caller-frontend-410240967190.asia-east1.run.app/');		//Live.
@@ -1315,8 +1323,12 @@ button.home-button:hover img {
         };
         ws.onclose = () => {
             //console.warn('[WebSocket 已關閉]');
-            console.log("[WS] CLOSE", e.code, e.reason);
-            if (!reconnecting) tryReconnect();
+            //console.log("[WS] CLOSE", e.code, e.reason);
+            //if (!reconnecting) tryReconnect();
+            setTimeout(() => {
+              console.log("[WS] Reconnecting...");
+              ws.reconnecting();
+            }, 2000); // 2 秒後重試
             
         };
         ws.onerror = (err) => {
@@ -1715,9 +1727,25 @@ button.home-button:hover img {
     //   }
     // }, inactivityTime);
   }
-  
-  
 
+
+  //網路檢查.
+  window.addEventListener("offline", () => {
+    console.log("網路斷線");
+    if (ws) ws.close();
+  });
+
+  window.addEventListener("online", () => {
+    console.log("網路恢復，嘗試重連");
+    //createWebSocket("ws://example.com");
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
+      console.log("頁面回到前景，檢查連線");
+      //createWebSocket("ws://example.com");
+    }
+  });
 
 </script>    
 </body>
