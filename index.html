@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="version" content="1.0.10">
+<meta name="version" content="1.0.11">
 <script src="./js/qrcode.min.js"></script>
 <script src="./js/crypto-js.min.js"></script>
 <script src="./js/localforage.min.js"></script>
@@ -463,17 +463,18 @@ button.home-button:hover img {
     position: relative;
     background-color: #ffffff;
     padding: 20px;
-    width: 100%;
-    max-width: 300px;
+    width: 45vw;
+    height: 60vh;
+    max-width: 550px;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 20px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     text-align: center;
     /* color: white; */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: auto;
+    /*height: auto;*/
     min-height: 280px;
 }
 .modal-button {
@@ -492,13 +493,13 @@ button.home-button:hover img {
     display: grid;
     position: relative;
     width: 100%;
-    max-width: 300px;
+    /* max-width: 300px; */
     padding: 10px;
     border-bottom: 1px solid #eee;
     box-sizing: border-box;
     /* color: white; */
     color: #043190;
-    height: auto;
+    height: 100%;
     /* min-height: 140px; */
     align-content: space-around;
 }
@@ -506,40 +507,46 @@ button.home-button:hover img {
     border-bottom: none;
 }
 .pStore{
-    font-size: 2rem;
+    font-size: 3.2rem;
     color: #043190;
+    letter-spacing: 1vw;
 }
 .pSection{
-    font-size: 2rem;
+    font-size: 2.8rem;
     color: #F68200;
+    letter-spacing: 0.5vw;
+    margin: 1vh;
 }
 .pNumber{
-    font-size: 5rem;
+    font-size: 15rem;
     color: #F68200;
+    margin-top: -6vh;
 }
 .pTime{
     font-size: 1rem;
     color: #043190;
 }
 .modal-box-info {
-    font-size: 1.2rem;
-    display: flex;
+    font-size: 2rem;
+    /* display: flex; */
     align-items: center;
     justify-content: center;  
+    margin-top: -6vh;
+    display: none;
 }
 
 .modal-box-icon {
-  margin-right: 4px;
+  margin-right: 1vw;
 }
 .modal-box-icon img{
   width: auto;
-  height: 30px;
+  height: 50px;
 }
 
 .modal-box-count {
   color: orange;
   font-weight: bold;
-  margin: 5px;
+  margin: 1vw;
 }
 .hidden{
   display: none;
@@ -588,24 +595,25 @@ button.home-button:hover img {
     align-items: center;
 }
 
-
-/* 響應式縮小字體 */
-@media (max-width: 480px){
-  :root{ --circle-size: 64px; --overlap: -18px; }
-  .badge .text{ font-size: 18px; letter-spacing: 1px; }
-  #currentCall {
-    font-size: 1.5rem;
-  }  
+@media (max-width: 1024px) {
+  .page2{
+    height: auto;
+  }
+  .group-card {
+    width: auto;
+    height: auto;
+  }
   .group-title{
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
   .group-info {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
   .icon img{
-    height: 25px;
+    height: 30px;
   }  
 }
+
 /* 小螢幕改成直列 */
 @media (max-width: 720px) {
   body{
@@ -648,9 +656,125 @@ button.home-button:hover img {
     height: auto;
     width: 40%;
   }
+  .modal{
+    width: 100%;
+    height: 50vh;
+  }
+  .pStore{
+    font-size: 2rem;
+  }
+ .pSection{
+    font-size: 1.8rem;
+  }
+  .pNumber{
+    font-size: 10rem;
+  }
+  .modal-box-info{
+    font-size: 1.4rem;
+  }
+  .modal-box-icon img{
+    height: 30px;
+  }
+
   .resp { flex-direction: column; }
   .resp .left, .resp .right { width: 100%; flex: none; }
 } 
+
+/* 響應式縮小字體 */
+@media (max-width: 480px){
+  :root{ --circle-size: 64px; --overlap: -18px; }
+  .badge .text{ font-size: 18px; letter-spacing: 1px; }
+  .resp{
+    padding: 1vh;
+    gap: 1vh;
+  }
+  .group-title{
+    font-size: 1.5rem;
+  }
+  .group-info {
+    font-size: 0.8rem;
+  }
+  .icon img{
+    height: 25px;
+  }  
+  .group-card {
+    width: auto;
+    height: auto;
+  }
+  .page1{
+    padding: 0;
+  }
+  #currentCall {
+    padding: 0;
+    font-size: 25px;
+    /* padding: 1vh 1vw; */
+    width: 35vw;
+    margin-top: 0;
+  }
+  .currentDisp p{
+    font-size: 0.8rem;
+  }
+  .qrcode-title {
+    font-size: 1rem;
+  }
+  .qrcode-title2 {
+    font-size: 0.8rem;
+  }
+  .arrow-label{
+    padding: 2vh 2vh;
+  }
+  #ver{
+    margin-top: -1vh;
+  }
+  .storelogo{
+    height: auto;
+    width: 35%;
+  }
+  }
+  @media (max-height: 450px){
+    :root{ --circle-size: 60px; --overlap: -15px; }
+    .badge .text{ font-size: 18px; letter-spacing: 1px; }
+    .resp{
+      padding: 1vh;
+      gap: 1vh;
+    }   
+    .qrcode-title {
+      font-size: 1rem;
+    }
+    .qrcode-title2 {
+      font-size: 0.8rem;
+    } 
+    .qrcode-container {
+      margin: 10px 0 0 0;
+    }
+    .page1{
+      padding: 0;
+      height: auto;
+      gap: 0;
+    }    
+    #ver{
+      margin-top: -2vh;
+    }    
+    .modal{
+      width: 100%;
+      height: 50vh;
+    }
+    .pStore{
+      font-size: 2rem;
+    }
+    .pSection{
+      font-size: 1.8rem;
+    }
+    .pNumber{
+      font-size: 10rem;
+    }
+    .modal-box-info{
+      font-size: 1.4rem;
+    }
+    .modal-box-icon img{
+      height: 30px;
+    }    
+  }
 </style>
 </head>
 <body>
@@ -793,11 +917,10 @@ button.home-button:hover img {
       <div class="pStore">您的號碼是</div>
       <div class="pSection" id="nowSection">5~6人</div>
       <div class="pNumber" id="nowTakeNumber">056</div>
-      <div class="modal-box-info">
-        <!-- <span class="icon">👤</span> -->
+      <div class="modal-box-info ">
         <span class="modal-box-icon"><img src="./images/waiting_normal.png"></span>
         等待組數 <span class="modal-box-count">00</span> 組
-      </div>      
+      </div>       
     </div>
     <!-- <div class = "modal-box">
         <div class="modal-button" onclick="closeModal()">關閉</div>
@@ -828,6 +951,7 @@ button.home-button:hover img {
   let isOnlineGet = null;
   let bClickedAddButton = false;
   let inactivityTime = 10000; // 10 秒
+  let popMsgInactivityTime = 5000; // 5 秒
   let timer;
   let nowGetNumItem = null;
   let ws = null;
@@ -1018,18 +1142,23 @@ button.home-button:hover img {
     bClickedAddButton = true;
     sendGetNum(clientId, id);
     //todo: 
-    resetTimer();
+    //resetTimer();
+    //清掉計時器.
+    if(timer){
+      clearTimeout(timer);
+    }
   }
   function openModal(getnum, itemid){
       document.getElementById('modalOverlay').style.display = 'flex';
       document.getElementById('nowSection').textContent = initData.get_num_item_names[Number(itemid)];
-      document.getElementById('nowTakeNumber').textContent = getnum;
+      let paddedNumber = String(getnum).padStart(3,"0");
+      document.getElementById('nowTakeNumber').textContent = paddedNumber;
       let count = document.getElementById('modalOverlay').querySelector('.modal-box-count');
       let cnt = itemGroup[Number(itemid)].length;
       if(count){
         count.textContent = cnt;
       }
-
+      closePopMsgTimer();
       // document.getElementById('nowTakeNumber').textContent = itemobj.num;
       // const now = new Date();
       // document.getElementById("nowTimestamp").innerText = now.toLocaleString('zh-TW', {
@@ -1061,7 +1190,8 @@ button.home-button:hover img {
   function closeModal(){
     document.getElementById('modalOverlay').style.display = 'none';
     removeCardSelect();
-    }
+    resetTimer();
+  }
   function clearSection(){
     const groupContainer = document.getElementById("groupContainer");
     groupContainer.innerHTML = ""; // 清空舊的內容
@@ -1141,8 +1271,8 @@ button.home-button:hover img {
       if(!qrcodecontainer){
         return;
       }
-    //   console.log(`新的寬度: ${window.innerWidth}px`);
-    //   console.log(`新的高度: ${window.innerHeight}px`);
+      console.log(`新的寬度: ${window.innerWidth}px`);
+      console.log(`新的高度: ${window.innerHeight}px`);
 
       let rateX = Math.floor(window.innerWidth*0.18);
       let rateY =  Math.floor(window.innerHeight*0.18);
@@ -1165,7 +1295,9 @@ button.home-button:hover img {
             }
         }
       }
-    
+      console.log(`新的寬高: ${qWidth}px`);
+      console.log(`rateX: ${rateX}px`);
+      console.log(`rateY: ${rateY}px`);
         qrcodecontainer.innerHTML = "";
 
         var qrcode = new QRCode(document.getElementById("about-qrcode"), {
@@ -1519,7 +1651,8 @@ button.home-button:hover img {
                           //     openModal(obj.get_num, obj.get_num_item_id);
                           // }
                           if(bClickedAddButton === true){
-                            removeCardSelect();
+                            //removeCardSelect();
+                            openModal(obj.get_num, obj.get_num_item_id);
                             bClickedAddButton = false; 
                           }
                           if(obj.get_num_item_id){
@@ -1805,8 +1938,24 @@ button.home-button:hover img {
       }
     }, inactivityTime);
   }
+  function closePopMsgTimer() {
+    if(timer){
+      clearTimeout(timer);
+    }
+    
+    timer = setTimeout(() => {
+      //window.location.href = "otherpage.html"; // 這裡換成你要跳轉的網址
+      if(nowpage === 2){
+        clearTimeout(timer);
+        closeModal();
+      }
+    }, popMsgInactivityTime);
+  }  
 
-
+  window.addEventListener("resize", () => {
+      generateQRCode();
+      //drawMultLangLabel();
+  });
   //網路檢查.
   window.addEventListener("offline", () => {
     console.log("網路斷線");
